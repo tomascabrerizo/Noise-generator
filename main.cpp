@@ -151,7 +151,7 @@ const int MAX_RAND_VALUES = 256;
 float rValues[MAX_RAND_VALUES];
 float rValues2d[MAX_RAND_VALUES*MAX_RAND_VALUES];
 
-void InitSimpleNoise1D(int seed)
+void InitValueNoise1D(int seed)
 {
     srand(seed);
     for(int i = 0; i < MAX_RAND_VALUES; i++)
@@ -160,7 +160,7 @@ void InitSimpleNoise1D(int seed)
     }
 }
 
-void InitSimplerNoise2D(int seed)
+void InitValueNoise2D(int seed)
 {
     srand(seed);
     for(int i = 0; i < MAX_RAND_VALUES*MAX_RAND_VALUES; i++)
@@ -169,7 +169,7 @@ void InitSimplerNoise2D(int seed)
     }
 }
 
-float SimpleNoise1D(float x)
+float ValueNoise1D(float x)
 {
     const int MASK = MAX_RAND_VALUES - 1;
     int xi = floorf(x);
@@ -185,8 +185,7 @@ float SimpleNoise1D(float x)
     return Lerp(rValues[xMin], rValues[xMax], tRemap);
 }
 
-
-float SimpleNoise2D(float x, float y)
+float ValueNoise2D(float x, float y)
 {
     const int MASK = MAX_RAND_VALUES - 1;
     int xi = floorf(x);
@@ -211,6 +210,12 @@ float SimpleNoise2D(float x, float y)
     float lerpX0 = Lerp(c00, c10, sx); 
     float lerpX1 = Lerp(c01, c11, sx); 
     return Lerp(lerpX0, lerpX1, sy);
+}
+
+float PerlinNoise2D(float x, float y)
+{
+
+    return 0.0f;
 }
 
 int main()
@@ -238,8 +243,8 @@ int main()
     UnloadImage(mapedImage);
     UnloadImage(interpolatedImage);
     
-    InitSimpleNoise1D(16);
-    InitSimplerNoise2D(16);
+    InitValueNoise1D(16);
+    InitValueNoise2D(16);
 
     //--------------------------------------------------------------------------------------
     // Main game loop
@@ -262,7 +267,7 @@ int main()
        
         static float offsetX = 0.0f;
         static float offsetY = 0.0f;
-        float speed = 0.5f;
+        float speed = 0.3f;
         
         const int numSteps2d = 10;
         float step2d = 0.04f;
@@ -273,7 +278,7 @@ int main()
             int x2d = 0;
             for(float x = 0.0f; x < numSteps2d; x+=step2d)
             {
-                float randValue = SimpleNoise2D(x+offsetX, y+offsetY);
+                float randValue = ValueNoise2D(x+offsetX, y+offsetY);
                 Color randColor = {};
                 randColor.a = 255;
                 randColor.r = randValue * 255;
@@ -291,8 +296,8 @@ int main()
         float step = 0.05f;
         for(float i = -10; i < numSteps; i+=step)
         {
-            float randValue = SimpleNoise1D(i+offsetX);
-            float randValue1 = SimpleNoise1D(i+step+offsetX);
+            float randValue = ValueNoise1D(i+offsetX);
+            float randValue1 = ValueNoise1D(i+step+offsetX);
             int y = randValue * 30 + 300;
             int y1 = randValue1 * 30 + 300;
             DrawLine(x++, y, x1++, y1, RED);
