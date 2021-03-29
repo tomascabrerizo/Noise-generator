@@ -263,6 +263,53 @@ float PerlinNoise2D(float x, float y)
     return Lerp(lerpX0, lerpX1, sy);
 }
 
+void DrawValueNoise2D(int x, int y, float offsetX, float offsetY)
+{
+    const int numSteps2d = 256;
+    float step2d = 0.04f;
+    int sy = y;
+    for(int dy = 0; dy < numSteps2d; dy++)
+    {
+        int sx = x;
+        for(int dx = 0; dx < numSteps2d; dx++)
+        {
+            float randValue = ValueNoise2D(dx*step2d+offsetX, dy*step2d+offsetY);
+            Color randColor = {};
+            randColor.a = 255;
+            randColor.r = randValue * 255;
+            randColor.g = randValue * 255;
+            randColor.b = randValue * 255;
+            DrawPixel(sx, sy, randColor);
+            sx++;
+        }
+        sy++;
+    }
+}
+
+void DrawPerlinNoise(int x, int y, float offsetX, float offsetY)
+{   
+    const int numSteps2d = 256;
+    float step2d = 0.04f;
+    int sy = y;
+    for(int dy = 0; dy < numSteps2d; dy++)
+    {
+        int sx = x;
+        for(int dx = 0; dx < numSteps2d; dx++)
+        {
+            float randValue = (PerlinNoise2D(dx*step2d+offsetX, dy*step2d+offsetY) + 1) / 2;
+            Color randColor = {};
+            randColor.a = 255;
+            randColor.r = randValue * 255;
+            randColor.g = randValue * 255;
+            randColor.b = randValue * 255;
+            DrawPixel(sx, sy, randColor);
+            sx++;
+        }
+        sy++;
+    }
+}
+
+
 int main()
 {
     // Initialization
@@ -306,73 +353,17 @@ int main()
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-        ClearBackground(DARKGRAY);
+        ClearBackground(WHITE);
         
-        DrawTexture(interpolatedTexture, 0, 0, WHITE);
-       
+        DrawTexture(interpolatedTexture, 0, screenHeight/6, WHITE);
+        DrawText("Bilinear filter", 0, 55, 18, BLACK);
         static float offsetX = 0.0f;
         static float offsetY = 0.0f;
         float speed = 0.3f;
-        
-        {   
-            const int numSteps2d = 256;
-            float step2d = 0.04f;
-            int y2d = 0;
-            int posX = 256;
-            for(int y = 0.0; y < numSteps2d; y++)
-            {
-                int x2d = 0;
-                for(int x = 0.0; x < numSteps2d; x++)
-                {
-                    float randValue = ValueNoise2D(x*step2d+offsetX, y*step2d+offsetY);
-                    Color randColor = {};
-                    randColor.a = 255;
-                    randColor.r = randValue * 255;
-                    randColor.g = randValue * 255;
-                    randColor.b = randValue * 255;
-                    DrawPixel(x2d+posX, y2d, randColor);
-                    x2d++;
-                }
-                y2d++;
-            }
-        }
-        
-        {   
-            const int numSteps2d = 256;
-            float step2d = 0.04f;
-            int y2d = 0;
-            int posX = 512;
-            for(int y = 0.0; y < numSteps2d; y++)
-            {
-                int x2d = 0;
-                for(int x = 0.0; x < numSteps2d; x++)
-                {
-                    float randValue = (PerlinNoise2D(x*step2d+offsetX, y*step2d+offsetY) + 1) / 2;
-                    Color randColor = {};
-                    randColor.a = 255;
-                    randColor.r = randValue * 255;
-                    randColor.g = randValue * 255;
-                    randColor.b = randValue * 255;
-                    DrawPixel(x2d+posX, y2d, randColor);
-                    x2d++;
-                }
-                y2d++;
-            }
-        }
-
-
-        const int numSteps = 10;
-        int x = 0;
-        int x1 = 1;
-        float step = 0.05f;
-        for(float i = -10; i < numSteps; i+=step)
-        {
-            float randValue = ValueNoise1D(i+offsetX);
-            float randValue1 = ValueNoise1D(i+step+offsetX);
-            int y = randValue * 30 + 300;
-            int y1 = randValue1 * 30 + 300;
-            DrawLine(x++, y, x1++, y1, RED);
-        }
+        DrawValueNoise2D(256, screenHeight/6, offsetX, offsetY); 
+        DrawText("Value Noise", 256, 55, 18, BLACK);
+        DrawPerlinNoise(512, screenHeight/6, offsetX, offsetY); 
+        DrawText("Perlin Noise", 512, 55, 18, BLACK);
 
         if(IsKeyDown(KEY_RIGHT)) offsetX += speed;
         if(IsKeyDown(KEY_LEFT)) offsetX -= speed;
