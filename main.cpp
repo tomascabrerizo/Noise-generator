@@ -150,6 +150,7 @@ Image BilinearInterpolatedImage(Image grid, uint32_t width, uint32_t height)
 const int MAX_RAND_VALUES = 256;
 float rValues[MAX_RAND_VALUES];
 float rValues2d[MAX_RAND_VALUES*MAX_RAND_VALUES];
+Vector2 rValuesPerlin[MAX_RAND_VALUES*MAX_RAND_VALUES];
 
 void InitValueNoise1D(int seed)
 {
@@ -166,6 +167,17 @@ void InitValueNoise2D(int seed)
     for(int i = 0; i < MAX_RAND_VALUES*MAX_RAND_VALUES; i++)
     {
         rValues2d[i] = (float)rand()/(float)RAND_MAX; 
+    }
+}
+
+void InitPerlinNoise2D(int seed)
+{
+    srand(seed);
+    for(int i = 0; i < MAX_RAND_VALUES*MAX_RAND_VALUES; i++)
+    {
+        //Init all values with random values between -1 .. 1
+        rValuesPerlin[i].x = 2*((float)rand()/(float)RAND_MAX)-1;
+        rValuesPerlin[i].y = 2*((float)rand()/(float)RAND_MAX)-1;
     }
 }
 
@@ -214,8 +226,41 @@ float ValueNoise2D(float x, float y)
 
 float PerlinNoise2D(float x, float y)
 {
+    const int MASK = MAX_RAND_VALUES - 1;
+    int xi = floorf(x);
+    int yi = floorf(y);
+    
+    int xi0 = xi & MASK;
+    int xi1 = (xi0+1) & MASK;
+    int yi0 = yi & MASK;
+    int yi1 = (yi0+1) & MASK;
+    
+    //Gradient at the corner of the cell
+    Vector2 c00 = rValuesPerlin[yi0*MASK+xi0];
+    Vector2 c10 = rValuesPerlin[yi0*MASK+xi1];
+    Vector2 c01 = rValuesPerlin[yi1*MASK+xi0];
+    Vector2 c11 = rValuesPerlin[yi1*MASK+xi1];
 
-    return 0.0f;
+    float tx = x - xi;
+    float ty = y - yi;
+    
+    //Generate vector going from the grid point to p
+    float x0 = tx; 
+    float x1 = tx - 1; 
+    float y0 = ty; 
+    float y1 = ty - 1; 
+    
+    Vector2 p00 = {x0, y0};
+    Vector2 p10 = {x1, y0};
+    Vector2 p01 = {x0, y1};
+    Vector2 p11 = {x1, y1};
+
+    float sx = SmoothStep(tx);
+    float sy = SmoothStep(ty); 
+
+    float lerpX0 = Lerp(Vector2DotProduct(c00, p00), Vector2DotProduct(c10, p10), sx);
+    float lerpX1 = Lerp(Vector2DotProduct(c01, p01), Vector2DotProduct(c11, p11), sx);
+    return Lerp(lerpX0, lerpX1, sy);
 }
 
 int main()
@@ -245,6 +290,7 @@ int main()
     
     InitValueNoise1D(16);
     InitValueNoise2D(16);
+    InitPerlinNoise2D(16);
 
     //--------------------------------------------------------------------------------------
     // Main game loop
@@ -262,33 +308,58 @@ int main()
 
         ClearBackground(DARKGRAY);
         
-        DrawTexture(mapedTexture, 0, 0, WHITE);
-        DrawTexture(interpolatedTexture, 256, 0, WHITE);
+        DrawTexture(interpolatedTexture, 0, 0, WHITE);
        
         static float offsetX = 0.0f;
         static float offsetY = 0.0f;
         float speed = 0.3f;
         
-        const int numSteps2d = 10;
-        float step2d = 0.04f;
-        int y2d = 0;
-        int posX = 512;
-        for(float y = 0.0f; y < numSteps2d; y+=step2d)
-        {
-            int x2d = 0;
-            for(float x = 0.0f; x < numSteps2d; x+=step2d)
+        {   
+            const int numSteps2d = 256;
+            float step2d = 0.04f;
+            int y2d = 0;
+            int posX = 256;
+            for(int y = 0.0; y < numSteps2d; y++)
             {
-                float randValue = ValueNoise2D(x+offsetX, y+offsetY);
-                Color randColor = {};
-                randColor.a = 255;
-                randColor.r = randValue * 255;
-                randColor.g = randValue * 255;
-                randColor.b = randValue * 255;
-                DrawPixel(x2d+posX, y2d, randColor);
-                x2d++;
+                int x2d = 0;
+                for(int x = 0.0; x < numSteps2d; x++)
+                {
+                    float randValue = ValueNoise2D(x*step2d+offsetX, y*step2d+offsetY);
+                    Color randColor = {};
+                    randColor.a = 255;
+                    randColor.r = randValue * 255;
+                    randColor.g = randValue * 255;
+                    randColor.b = randValue * 255;
+                    DrawPixel(x2d+posX, y2d, randColor);
+                    x2d++;
+                }
+                y2d++;
             }
-            y2d++;
         }
+        
+        {   
+            const int numSteps2d = 256;
+            float step2d = 0.04f;
+            int y2d = 0;
+            int posX = 512;
+            for(int y = 0.0; y < numSteps2d; y++)
+            {
+                int x2d = 0;
+                for(int x = 0.0; x < numSteps2d; x++)
+                {
+                    float randValue = (PerlinNoise2D(x*step2d+offsetX, y*step2d+offsetY) + 1) / 2;
+                    Color randColor = {};
+                    randColor.a = 255;
+                    randColor.r = randValue * 255;
+                    randColor.g = randValue * 255;
+                    randColor.b = randValue * 255;
+                    DrawPixel(x2d+posX, y2d, randColor);
+                    x2d++;
+                }
+                y2d++;
+            }
+        }
+
 
         const int numSteps = 10;
         int x = 0;
